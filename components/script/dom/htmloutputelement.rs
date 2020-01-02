@@ -78,7 +78,7 @@ impl HTMLOutputElementMethods for HTMLOutputElement {
         self.upcast::<HTMLElement>().labels()
     }
 
-    // https://html.spec.whatwg.org/multipage/#dom-output-defaultvaleu
+    // https://html.spec.whatwg.org/multipage/#dom-output-defaultvalue
     fn DefaultValue(&self) -> DOMString {
         let dvo = self.default_value_override.borrow();
         if let Some(ref dv) = *dvo {

@@ -2017,7 +2017,7 @@ impl Node {
         parent.owner_doc().remove_script_and_layout_blocker();
     }
 
-    // https://dom.spec.whatwg.org/multipage/#string-replace-all
+    // https://dom.spec.whatwg.org/#string-replace-all
     pub fn string_replace_all(string: DOMString, parent: &Node) {
         if string.len() == 0 {
             Node::replace_all(None, parent);
