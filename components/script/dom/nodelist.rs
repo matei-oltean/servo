@@ -7,6 +7,8 @@ use crate::dom::bindings::codegen::Bindings::NodeListBinding;
 use crate::dom::bindings::codegen::Bindings::NodeListBinding::NodeListMethods;
 use crate::dom::bindings::reflector::{reflect_dom_object, Reflector};
 use crate::dom::bindings::root::{Dom, DomRoot, MutNullableDom};
+use crate::dom::bindings::str::DOMString;
+use crate::dom::document::Document;
 use crate::dom::node::{ChildrenMutation, Node};
 use crate::dom::window::Window;
 use dom_struct::dom_struct;
@@ -17,6 +19,7 @@ use std::cell::Cell;
 pub enum NodeListType {
     Simple(Vec<Dom<Node>>),
     Children(ChildrenList),
+    ElementsByName(ElementsByNameList),
 }
 
 // https://dom.spec.whatwg.org/#interface-nodelist
@@ -65,6 +68,17 @@ impl NodeList {
         NodeList::new(window, NodeListType::Children(ChildrenList::new(node)))
     }
 
+    pub fn new_elements_by_name_list(
+        window: &Window,
+        document: &Document,
+        name: DOMString,
+    ) -> DomRoot<NodeList> {
+        NodeList::new(
+            window,
+            NodeListType::ElementsByName(ElementsByNameList::new(document, name)),
+        )
+    }
+
     pub fn empty(window: &Window) -> DomRoot<NodeList> {
         NodeList::new(window, NodeListType::Simple(vec![]))
     }
@@ -76,6 +90,7 @@ impl NodeListMethods for NodeList {
         match self.list_type {
             NodeListType::Simple(ref elems) => elems.len() as u32,
             NodeListType::Children(ref list) => list.len(),
+            NodeListType::ElementsByName(ref list) => list.len(),
         }
     }
 
@@ -86,6 +101,7 @@ impl NodeListMethods for NodeList {
                 .get(index as usize)
                 .map(|node| DomRoot::from_ref(&**node)),
             NodeListType::Children(ref list) => list.item(index),
+            NodeListType::ElementsByName(ref list) => list.item(index),
         }
     }
 
@@ -317,5 +333,31 @@ impl ChildrenList {
     fn reset(&self) {
         self.last_visited.set(self.node.GetFirstChild().as_deref());
         self.last_index.set(0u32);
+    }
+}
+
+#[derive(JSTraceable, MallocSizeOf)]
+#[unrooted_must_root_lint::must_root]
+pub struct ElementsByNameList {
+    document: Dom<Document>,
+    name: DOMString,
+}
+
+impl ElementsByNameList {
+    pub fn new(document: &Document, name: DOMString) -> ElementsByNameList {
+        ElementsByNameList {
+            document: Dom::from_ref(document),
+            name: name,
+        }
+    }
+
+    pub fn len(&self) -> u32 {
+        self.document.elements_by_name_count(&self.name)
+    }
+
+    pub fn item(&self, index: u32) -> Option<DomRoot<Node>> {
+        self.document
+            .nth_element_by_name(index, &self.name)
+            .and_then(|n| Some(DomRoot::from_ref(&*n)))
     }
 }
